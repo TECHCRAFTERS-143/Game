@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rage Runner: The Praying Gamer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Arial', sans-serif;
+    }canvas {
+  background: #111;
+  display: block;
+  margin: 0 auto;
+}
+
+#message {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: red;
+  font-size: 2rem;
+  font-weight: bold;
+  display: none;
+  text-align: center;
+}
+
+#scoreBoard {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: rgba(0,0,0,0.5);
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="message">😡 You Died, Praying Gamer! 😂<br>Press Space to Retry</div>
+  <div id="scoreBoard">Score: 0 | Level: 1</div>  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const message = document.getElementById('message');
+    const scoreBoard = document.getElementById('scoreBoard');
+
+    let score = 0;
+    let level = 1;
+    let gameOver = false;
+    let scrollOffset = 0;
+
+    const player = {
+      x: 100,
+      y: 300,
+      radius: 20,
+      color: 'yellow',
+      dy: 0,
+      gravity: 0.8,
+      jumpForce: -12,
+      grounded: false
+    };
+
+    let traps = [];
+
+    function createTrap(xOffset) {
+      const height = 30 + Math.random() * 50;
+      const trap = {
+        x: xOffset,
+        y: 400 - height,
+        width: 30,
+        height: height,
+        color: 'red'
+      };
+      traps.push(trap);
+    }
+
+    function resetGame() {
+      player.y = 300;
+      player.dy = 0;
+      traps = [];
+      scrollOffset = 0;
+      score = 0;
+      level = 1;
+      gameOver = false;
+      message.style.display = 'none';
+      for (let i = 600; i < 3000; i += Math.random() * 200 + 100) {
+        createTrap(i);
+      }
+      updateScoreBoard();
+    }
+
+    function drawPlayer() {
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+      ctx.fillStyle = player.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawTraps() {
+      traps.forEach((trap) => {
+        ctx.fillStyle = trap.color;
+        ctx.fillRect(trap.x - scrollOffset, trap.y, trap.width, trap.height);
+      });
+    }
+
+    function checkCollision() {
+      for (let trap of traps) {
+        const trapX = trap.x - scrollOffset;
+        if (
+          player.x + player.radius > trapX &&
+          player.x - player.radius < trapX + trap.width &&
+          player.y + player.radius > trap.y
+        ) {
+          gameOver = true;
+          message.style.display = 'block';
+        }
+      }
+    }
+
+    function updateScoreBoard() {
+      scoreBoard.innerText = `Score: ${score} | Level: ${level}`;
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Gravity
+      player.dy += player.gravity;
+      player.y += player.dy;
+
+      // Ground check
+      if (player.y + player.radius >= canvas.height) {
+        player.y = canvas.height - player.radius;
+        player.dy = 0;
+        player.grounded = true;
+      } else {
+        player.grounded = false;
+      }
+
+      scrollOffset += 4 + level * 0.3;
+      score += 1;
+      if (score % 500 === 0) {
+        level++;
+        for (let i = 0; i < 5; i++) {
+          createTrap(scrollOffset + Math.random() * 800);
+        }
+      }
+
+      drawPlayer();
+      drawTraps();
+      checkCollision();
+      updateScoreBoard();
+    }
+
+    function gameLoop() {
+      update();
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        if (gameOver) {
+          resetGame();
+        } else if (player.grounded) {
+          player.dy = player.jumpForce;
+        }
+      }
+    });
+
+    // Mobile Touch Support
+    document.addEventListener('touchstart', () => {
+      if (gameOver) {
+        resetGame();
+      } else if (player.grounded) {
+        player.dy = player.jumpForce;
+      }
+    });
+
+    resetGame();
+    gameLoop();
+  </script></body>
+</html>
